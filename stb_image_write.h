@@ -1345,6 +1345,17 @@ STBIWDEF int stbi_write_apng_frame(stbi_apng_write_context *apng_context, int x,
       seq_number--;
    }
 
+   zlib = stbi__encode_png_idat((const unsigned char *) data, stride_bytes, x, y, comp, &zlen);
+   if (!zlib) return 0;
+
+   size_t extra_size = apng_context->wrote_first_frame ? 4 : 0;
+   size_t dat_size = 12+zlen+extra_size;
+   out = (unsigned char *) STBIW_MALLOC(dat_size);
+   if (!out) {
+      STBIW_FREE(zlib);
+      return 0;
+   }
+
    if (!is_default_frame) {
       unsigned char fctl[12 + 26];
       o = fctl;
@@ -1365,17 +1376,6 @@ STBIWDEF int stbi_write_apng_frame(stbi_apng_write_context *apng_context, int x,
       *o++ = 0;
       stbiw__wpcrc(&o,26);
       apng_context->write_context.func(apng_context->write_context.context, fctl, 12 + 26);
-   }
-
-   zlib = stbi__encode_png_idat((const unsigned char *) data, stride_bytes, x, y, comp, &zlen);
-   if (!zlib) return 0;
-
-   size_t extra_size = apng_context->wrote_first_frame ? 4 : 0;
-   size_t dat_size = 12+zlen+extra_size;
-   out = (unsigned char *) STBIW_MALLOC(dat_size);
-   if (!out) {
-      STBIW_FREE(zlib);
-      return 0;
    }
 
    o=out;
